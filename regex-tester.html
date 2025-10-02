@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Regex Playground</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Highlight styles for matched text */
+        .highlight {
+            background-color: #fef08a; /* yellow-200 */
+            border-radius: 3px;
+            padding: 2px 4px;
+            box-shadow: 0 0 0 2px #fde047;
+            animation: pulse 0.3s ease-out;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        
+        /* Editable content cursor */
+        [contenteditable="true"] {
+            cursor: text;
+        }
+        
+        /* Smooth transitions */
+        .transition-all {
+            transition: all 0.2s ease;
+        }
+        
+        /* Code styling */
+        code {
+            background-color: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+    </style>
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-slate-100 text-slate-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-900 mb-3">Interactive Regex Playground</h1>
+            <p class="text-lg text-slate-600 mt-2">Test your regular expressions in real-time and learn with the cheat sheet below.</p>
+            <div class="mt-4 flex justify-center gap-4">
+                <button id="clearBtn" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-all font-medium">Clear All</button>
+                <button id="examplesBtn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all font-medium">Load Examples</button>
+            </div>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Side: Tester -->
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <h2 class="text-2xl font-semibold mb-4 text-slate-900">Regex Tester</h2>
+                
+                <!-- Regex Input -->
+                <div class="mb-2">
+                    <label class="font-semibold text-slate-700 mb-2 block">Regular Expression</label>
+                    <div class="flex items-center bg-slate-100 rounded-lg focus-within:ring-2 focus-within:ring-indigo-500 transition-all">
+                        <span class="text-slate-500 pl-3 font-mono">/</span>
+                        <input type="text" id="regexInput" placeholder="Enter your pattern here" class="w-full p-3 bg-transparent outline-none font-mono" value="\b\d{6}\b">
+                        <span class="text-slate-500 font-mono">/</span>
+                        <input type="text" id="flagsInput" placeholder="flags" class="w-16 p-3 bg-transparent outline-none font-mono" value="g">
+                    </div>
+                    <div id="errorDisplay" class="text-red-600 text-sm mt-2 min-h-[20px]"></div>
+                </div>
+
+                <!-- Test String Area -->
+                <div class="mt-4">
+                    <label for="testString" class="font-semibold text-slate-700 mb-2 block">Test String</label>
+                    <div id="highlighted-output" class="w-full min-h-[200px] p-3 border border-slate-300 rounded-lg whitespace-pre-wrap font-mono text-sm overflow-auto bg-slate-50" spellcheck="false"></div>
+                    <textarea id="testString" class="hidden">My office is in Agra, Uttar Pradesh, PIN 282001. My friend lives at PIN code 400058. My phone number is 9876543210.</textarea>
+                </div>
+
+                <!-- Matches Output -->
+                <div class="mt-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-xl font-semibold text-slate-900">Matches Found</h3>
+                        <span id="matchCount" class="text-sm font-medium text-indigo-600 bg-indigo-100 px-3 py-1 rounded-full">0 matches</span>
+                    </div>
+                    <div id="matchesContainer" class="mt-2 p-4 bg-slate-50 rounded-lg min-h-[100px] text-sm font-mono overflow-auto max-h-64">
+                        <p class="text-slate-500">No matches found.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Cheat Sheet -->
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <h2 class="text-2xl font-semibold mb-4 text-slate-900">Regex Cheat Sheet</h2>
+                <div class="space-y-6 overflow-y-auto max-h-[80vh] pr-2">
+                    <!-- Character Shortcuts -->
+                    <div>
+                        <h3 class="font-semibold text-lg text-indigo-700">Character Shortcuts</h3>
+                        <ul class="list-none space-y-1 mt-2 text-sm">
+                            <li><code>\d</code> - Any digit (0-9)</li>
+                            <li><code>\D</code> - Any non-digit</li>
+                            <li><code>\w</code> - Any word character (a-z, A-Z, 0-9, _)</li>
+                            <li><code>\W</code> - Any non-word character</li>
+                            <li><code>\s</code> - Any whitespace (space, tab, newline)</li>
+                            <li><code>.</code> - Any single character (except newline)</li>
+                        </ul>
+                    </div>
+
+                    <!-- Quantifiers -->
+                    <div>
+                        <h3 class="font-semibold text-lg text-indigo-700">Quantifiers</h3>
+                        <ul class="list-none space-y-1 mt-2 text-sm">
+                            <li><code>*</code> - Zero or more times</li>
+                            <li><code>+</code> - One or more times</li>
+                            <li><code>?</code> - Zero or one time (optional)</li>
+                            <li><code>{5}</code> - Exactly 5 times</li>
+                            <li><code>{2,}</code> - 2 or more times</li>
+                            <li><code>{2,4}</code> - Between 2 and 4 times</li>
+                        </ul>
+                    </div>
+
+                    <!-- Character Sets -->
+                    <div>
+                        <h3 class="font-semibold text-lg text-indigo-700">Character Sets</h3>
+                        <ul class="list-none space-y-1 mt-2 text-sm">
+                            <li><code>[aeiou]</code> - Matches any character in the set</li>
+                            <li><code>[a-z]</code> - Matches any character in the range</li>
+                            <li><code>[^aeiou]</code> - Matches any character NOT in the set</li>
+                        </ul>
+                    </div>
+
+                    <!-- Anchors -->
+                    <div>
+                        <h3 class="font-semibold text-lg text-indigo-700">Anchors (Positions)</h3>
+                        <ul class="list-none space-y-1 mt-2 text-sm">
+                            <li><code>^</code> - Start of the string</li>
+                            <li><code>$</code> - End of the string</li>
+                            <li><code>\b</code> - Word boundary (edge of a word)</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Groups -->
+                    <div>
+                        <h3 class="font-semibold text-lg text-indigo-700">Groups & Capturing</h3>
+                        <ul class="list-none space-y-1 mt-2 text-sm">
+                            <li><code>(...)</code> - Capturing Group: groups and captures the match.</li>
+                            <li><code>(?:...)</code> - Non-Capturing Group: groups but does not capture.</li>
+                             <li><code>match[0]</code> - The entire matched string.</li>
+                            <li><code>match[1]</code> - The text captured by the first group.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Flags -->
+                    <div>
+                        <h3 class="font-semibold text-lg text-indigo-700">Flags</h3>
+                        <ul class="list-none space-y-1 mt-2 text-sm">
+                            <li><code>g</code> - Global: find all matches, not just the first.</li>
+                            <li><code>i</code> - Case-insensitive: ignore case (e.g., A matches a).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const regexInput = document.getElementById('regexInput');
+            const flagsInput = document.getElementById('flagsInput');
+            const testStringTextarea = document.getElementById('testString');
+            const highlightedOutput = document.getElementById('highlighted-output');
+            const matchesContainer = document.getElementById('matchesContainer');
+            const matchCount = document.getElementById('matchCount');
+            const errorDisplay = document.getElementById('errorDisplay');
+            const clearBtn = document.getElementById('clearBtn');
+            const examplesBtn = document.getElementById('examplesBtn');
+            
+            const examples = [
+                {
+                    name: 'Email Addresses',
+                    pattern: '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}',
+                    flags: 'g',
+                    text: 'Contact us at support@example.com or sales@company.co.uk for more info. You can also reach admin@test-site.org'
+                },
+                {
+                    name: 'Phone Numbers',
+                    pattern: '\\b\\d{3}[-.]?\\d{3}[-.]?\\d{4}\\b',
+                    flags: 'g',
+                    text: 'Call me at 123-456-7890 or 987.654.3210. My office number is 5551234567.'
+                },
+                {
+                    name: 'URLs',
+                    pattern: 'https?://[\\w.-]+\\.[a-z]{2,}[/\\w.-]*',
+                    flags: 'gi',
+                    text: 'Visit https://www.example.com or http://test-site.org/page for more details. Check out https://github.com/user/repo'
+                },
+                {
+                    name: 'Dates (MM/DD/YYYY)',
+                    pattern: '\\b(0?[1-9]|1[0-2])/(0?[1-9]|[12][0-9]|3[01])/(19|20)\\d{2}\\b',
+                    flags: 'g',
+                    text: 'Important dates: 12/25/2024, 01/01/2025, and 7/4/2025. Meeting on 03/15/2025.'
+                }
+            ];
+            
+            let currentExampleIndex = 0;
+            
+            // Sync textarea with the visible div
+            highlightedOutput.textContent = testStringTextarea.value;
+
+            function runRegexTest() {
+                const pattern = regexInput.value;
+                const flags = flagsInput.value;
+                const testString = testStringTextarea.value;
+                
+                // Clear previous results
+                matchesContainer.innerHTML = '';
+                errorDisplay.textContent = '';
+                
+                // Update highlighted view with original text first
+                highlightedOutput.textContent = testString;
+
+                if (!pattern) {
+                    matchesContainer.innerHTML = '<p class="text-slate-500">Enter a pattern to begin.</p>';
+                    matchCount.textContent = '0 matches';
+                    return;
+                }
+                
+                let regex;
+                try {
+                    regex = new RegExp(pattern, flags);
+                } catch (e) {
+                    errorDisplay.textContent = '❌ ' + e.message;
+                    matchCount.textContent = '0 matches';
+                    return;
+                }
+
+                // Highlighting Matches
+                if (testString && pattern) {
+                    const highlightedText = testString.replace(regex, (match) => {
+                       return `<span class="highlight">${match.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`
+                    });
+                    highlightedOutput.innerHTML = highlightedText;
+                }
+                
+                // Finding and displaying match details
+                const hasGlobalFlag = flags.includes('g');
+                let matches = [];
+                
+                if (hasGlobalFlag) {
+                    let match;
+                    const regexCopy = new RegExp(pattern, flags);
+                    while ((match = regexCopy.exec(testString)) !== null) {
+                        matches.push(match);
+                    }
+                } else {
+                    const match = testString.match(regex);
+                    if (match) {
+                        matches.push(match);
+                    }
+                }
+
+                // Update match count
+                matchCount.textContent = matches.length === 1 ? '1 match' : `${matches.length} matches`;
+
+                if (matches.length > 0) {
+                    matches.forEach((match, index) => {
+                        const matchElement = document.createElement('div');
+                        matchElement.className = 'p-3 border-b border-slate-200 last:border-b-0 hover:bg-slate-100 transition-all rounded';
+
+                        let matchContent = `<div class="flex items-start justify-between"><strong class="text-slate-700">Match ${index + 1}:</strong><span class="text-xs text-slate-500">Index: ${match.index}</span></div>`;
+                        matchContent += `<div class="mt-1"><span class="text-indigo-600 bg-indigo-100 px-2 py-1 rounded font-medium">${match[0].replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span></div>`;
+                        
+                        if (match.length > 1) {
+                            matchContent += '<div class="pl-4 mt-2 space-y-1 text-xs border-l-2 border-teal-300">';
+                            for (let i = 1; i < match.length; i++) {
+                                matchContent += `<div class="flex items-center gap-2"><span class="text-slate-600">Group ${i}:</span><span class="text-teal-600 bg-teal-100 px-2 py-0.5 rounded">${match[i] ? match[i].replace(/</g, '&lt;').replace(/>/g, '&gt;'): '(empty)'}</span></div>`;
+                            }
+                            matchContent += '</div>';
+                        }
+                        
+                        matchElement.innerHTML = matchContent;
+                        matchesContainer.appendChild(matchElement);
+                    });
+                } else {
+                    matchesContainer.innerHTML = '<p class="text-slate-500">No matches found. Try adjusting your pattern or test string.</p>';
+                }
+            }
+            
+            // Clear functionality
+            clearBtn.addEventListener('click', () => {
+                regexInput.value = '';
+                flagsInput.value = 'g';
+                testStringTextarea.value = '';
+                highlightedOutput.textContent = '';
+                runRegexTest();
+            });
+            
+            // Examples functionality
+            examplesBtn.addEventListener('click', () => {
+                const example = examples[currentExampleIndex];
+                regexInput.value = example.pattern;
+                flagsInput.value = example.flags;
+                testStringTextarea.value = example.text;
+                highlightedOutput.textContent = example.text;
+                
+                currentExampleIndex = (currentExampleIndex + 1) % examples.length;
+                examplesBtn.textContent = `Load Examples (${currentExampleIndex + 1}/${examples.length})`;
+                
+                runRegexTest();
+            });
+            
+            // Initialize examples button text
+            examplesBtn.textContent = `Load Examples (1/${examples.length})`;
+            
+            // Make the highlighted output editable and sync back to the textarea
+            highlightedOutput.setAttribute('contenteditable', true);
+
+            highlightedOutput.addEventListener('input', () => {
+                // Save cursor position before updating
+                const selection = window.getSelection();
+                const range = selection.getRangeAt(0);
+                const preCaretRange = range.cloneRange();
+                preCaretRange.selectNodeContents(highlightedOutput);
+                preCaretRange.setEnd(range.endContainer, range.endOffset);
+                const caretOffset = preCaretRange.toString().length;
+                
+                testStringTextarea.value = highlightedOutput.textContent;
+                runRegexTest();
+                
+                // Restore cursor position after updating
+                setTimeout(() => {
+                    let charCount = 0;
+                    let nodeStack = [highlightedOutput];
+                    let node, foundNode, foundOffset;
+                    
+                    while (node = nodeStack.pop()) {
+                        if (node.nodeType === 3) { // Text node
+                            const nextCharCount = charCount + node.length;
+                            if (!foundNode && caretOffset <= nextCharCount) {
+                                foundNode = node;
+                                foundOffset = caretOffset - charCount;
+                                break;
+                            }
+                            charCount = nextCharCount;
+                        } else {
+                            for (let i = node.childNodes.length - 1; i >= 0; i--) {
+                                nodeStack.push(node.childNodes[i]);
+                            }
+                        }
+                    }
+                    
+                    if (foundNode) {
+                        const newRange = document.createRange();
+                        const newSelection = window.getSelection();
+                        newRange.setStart(foundNode, foundOffset);
+                        newRange.collapse(true);
+                        newSelection.removeAllRanges();
+                        newSelection.addRange(newRange);
+                    }
+                }, 0);
+            });
+
+            regexInput.addEventListener('input', runRegexTest);
+            flagsInput.addEventListener('input', runRegexTest);
+
+            // Initial run on page load
+            runRegexTest();
+        });
+    </script>
+</body>
+</html>
